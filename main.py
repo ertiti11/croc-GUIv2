@@ -15,40 +15,83 @@ def enviar():
 def ejecutar_comando_recibir():
     codigo = codigo_entry.get()
     # Exportar la variable de entorno CROC_SECRET
-    os.environ["CROC_SECRET"] = codigo
-    
-    # Ejecutar el comando croc
-    comando = "croc"
-    threading.Thread(target=ejecutar_comando, args=(comando,)).start()
+    if os.name == "linux":
+        os.environ["CROC_SECRET"] = codigo
+        # Ejecutar el comando croc
+        comando = "croc"
+        threading.Thread(target=ejecutar_comando, args=(comando,)).start()
+    if os.name == "nt":
+        comando = f"croc --yes {codigo}"
+        threading.Thread(target=ejecutar_comando, args=(comando,)).start()
 
-def seleccionar_archivo():
-    archivo = filedialog.askopenfilename()
-    if archivo:
-        archivo_label.config(text=archivo)
-        enviar_btn.config(state=tk.NORMAL, command=lambda: ejecutar_comando_enviar(archivo))
+# def seleccionar_archivo():
+#     archivo = filedialog.askopenfilename()
+#     if archivo:
+#         archivo_label.configure(text=archivo)
+#         enviar_btn.configure(state=tk.NORMAL, command=lambda: ejecutar_comando_enviar(archivo))
 
-def ejecutar_comando_enviar(archivo):
-    comando = f"croc send --text --yes {archivo}"
+def ejecutar_comando_enviar(codigo):
+    texto = text_entry.get()
+    codigo = codigo.replace('"', '\\"').replace("'", "\\'")
+    comando = f"croc send --text {codigo}"
     threading.Thread(target=ejecutar_comando, args=(comando, True)).start()
+
+def ejecutar_comando_recibir():
+    codigo = codigo_entry.get()
+    comando = f"croc --yes {codigo}"
+    
+    proceso = subprocess.Popen(comando, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+#     connecting...
+
+# securing channel...
+
+# Receiving text message (6 B)
+
+
+
+# Receiving (<-127.0.0.1:58743)
+
+# holaaa
+    for linea in iter(proceso.stdout.readline, ''):
+        print(linea[0])
+
+    proceso.stdout.close()
+    proceso.wait()
+
+    
+
 
 def ejecutar_comando(comando, buscar_codigo=False):
     proceso = subprocess.Popen(comando, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     for linea in iter(proceso.stdout.readline, ''):
-        resultado_label.after(0, resultado_label.config, {'text': resultado_label.cget('text') + linea})
+        resultado_label.after(0, resultado_label.configure, {'text': resultado_label.cget('text') + linea})
+        # try:
+        #     print(linea.split("Code is:")[1].strip() if "Code is:" in linea and buscar_codigo else None)
+        # except IndexError:
+        #     print(None)
+
         if buscar_codigo and "Code is:" in linea:
             codigo = linea.split("Code is:")[1].strip()
-            enviar_btn.config(state=tk.NORMAL, command=lambda: copy_to_clipboard(codigo))
-            resultado_label.after(0, resultado_label.config, {'text': f"Código: {codigo}\n"})
+            # print(codigo)
+            resultado_label.configure(text=f"Código: {codigo}\n")
+            copiar_codigo_btn.configure(command=copy_to_clipboard(codigo))
             break
+    if 'Sending' in proceso.stdout.read():
+        resultado_label.configure(text="texto enviado✅")
+        codigo_entry.delete(0, tk.END)
+        print("Enviando archivo...")
+    print(proceso.stdout.read())
     proceso.stdout.close()
     proceso.wait()
 
 def copy_to_clipboard(texto):
+    print("Copiando código al portapapeles...")
     root.clipboard_clear()
     root.clipboard_append(texto)
     root.update()  # Importante para que se actualice el portapapeles
+    print("Código copiado al portapapeles")
 
-# Configuración de la ventana principal
+# configureuración de la ventana principal
 root = tk.CTk()
 root.title("Croc GUI")
 
@@ -72,17 +115,15 @@ recibir_comando_btn.pack(pady=10)
 
 # Frame para la opción de enviar
 enviar_frame = tk.CTkFrame(root)
-seleccionar_btn = tk.CTkButton(enviar_frame, text="Seleccionar archivo", command=seleccionar_archivo)
-seleccionar_btn.pack(pady=10)
-archivo_label = tk.CTkLabel(enviar_frame, text="Ningún archivo seleccionado")
-archivo_label.pack(pady=10)
-enviar_btn = tk.CTkButton(enviar_frame, text="Enviar", state=tk.DISABLED)
+text_entry = tk.CTkEntry(enviar_frame)
+text_entry.pack(pady=10)
+enviar_btn = tk.CTkButton(enviar_frame, text="Enviar", command=lambda: ejecutar_comando_enviar(text_entry.get()))
 enviar_btn.pack(pady=10)
-copiar_codigo_btn = tk.CTkButton(enviar_frame, text="Copiar código al portapapeles", state=tk.DISABLED)
+copiar_codigo_btn = tk.CTkButton(enviar_frame, text="Copiar código al portapapeles", command=lambda: copy_to_clipboard(resultado_label.cget('text')))
 copiar_codigo_btn.pack(pady=10)
-
+estado_envio_label = tk.CTkLabel(enviar_frame, text="no enviado")
 # Label para mostrar el resultado del comando croc
-resultado_label = tk.CTkLabel(root, text="", wraplength=400, justify="left")
+resultado_label = tk.CTkLabel(root, text="codig:", wraplength=400, justify="left")
 resultado_label.pack(pady=10)
 
 # Iniciar la aplicación con la ventana principal visible
