@@ -12,17 +12,7 @@ def enviar():
     enviar_frame.pack(fill='both', expand=True)
     recibir_frame.pack_forget()
 
-def ejecutar_comando_recibir():
-    codigo = codigo_entry.get()
-    # Exportar la variable de entorno CROC_SECRET
-    if os.name == "linux":
-        os.environ["CROC_SECRET"] = codigo
-        # Ejecutar el comando croc
-        comando = "croc"
-        threading.Thread(target=ejecutar_comando, args=(comando,)).start()
-    if os.name == "nt":
-        comando = f"croc --yes {codigo}"
-        threading.Thread(target=ejecutar_comando, args=(comando,)).start()
+# def ejecutar_comando_recibir():
 
 # def seleccionar_archivo():
 #     archivo = filedialog.askopenfilename()
@@ -38,9 +28,15 @@ def ejecutar_comando_enviar(codigo):
 
 def ejecutar_comando_recibir():
     codigo = codigo_entry.get()
-    comando = f"croc --yes {codigo}"
+    # Exportar la variable de entorno CROC_SECRET
+    os.environ["CROC_SECRET"] = codigo
+        # Ejecutar el comando croc
+    comando = "croc --yes"
+    threading.Thread(target=ejecutar_comando_recibir_thread, args=(comando,)).start()
+
+
     
-    proceso = subprocess.Popen(comando, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    # proceso = subprocess.Popen(comando, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 #     connecting...
 
 # securing channel...
@@ -52,13 +48,21 @@ def ejecutar_comando_recibir():
 # Receiving (<-127.0.0.1:58743)
 
 # holaaa
-    for linea in iter(proceso.stdout.readline, ''):
-        print(linea[0])
+    #for linea in iter(proceso.stdout.readline, ''):
+    #    print(linea)
+# k
 
+def ejecutar_comando_recibir_thread(comando):
+    proceso = subprocess.Popen(comando, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+
+    password = None
+
+    for linea in iter(proceso.stdout.readline, ''):
+        password = linea
+
+    print(password.replace("\n",""))
     proceso.stdout.close()
     proceso.wait()
-
-    
 
 
 def ejecutar_comando(comando, buscar_codigo=False):
@@ -112,6 +116,10 @@ codigo_entry = tk.CTkEntry(recibir_frame)
 codigo_entry.pack(pady=10)
 recibir_comando_btn = tk.CTkButton(recibir_frame, text="Recibir", command=ejecutar_comando_recibir)
 recibir_comando_btn.pack(pady=10)
+copiar_codigo_btn = tk.CTkButton(recibir_frame, text="Copiar código al portapapeles", command=lambda: copy_to_clipboard(resultado_label.cget('text')))
+copiar_codigo_btn.pack(pady=10)
+
+
 
 # Frame para la opción de enviar
 enviar_frame = tk.CTkFrame(root)
