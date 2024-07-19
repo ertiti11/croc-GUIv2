@@ -95,6 +95,7 @@ def copy_to_clipboard(texto=None):
     if texto is None:
         texto = resultado_label.cget("text")
         texto = texto.replace("Código: ", "").replace("\n", "")
+
         print(f"Texto: ({texto})")
         root.clipboard_append(texto)
     else:
