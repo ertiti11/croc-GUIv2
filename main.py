@@ -78,7 +78,7 @@ def ejecutar_comando(comando, buscar_codigo=False):
             codigo = linea.split("Code is:")[1].strip()
             # print(codigo)
             resultado_label.configure(text=f"Código: {codigo}\n")
-            copiar_codigo_btn.configure(command=copy_to_clipboard(codigo))
+            copy_to_clipboard(codigo)
             break
     if 'Sending' in proceso.stdout.read():
         resultado_label.configure(text="texto enviado✅")
@@ -88,12 +88,20 @@ def ejecutar_comando(comando, buscar_codigo=False):
     proceso.stdout.close()
     proceso.wait()
 
-def copy_to_clipboard(texto):
+def copy_to_clipboard(texto=None):
     print("Copiando código al portapapeles...")
     root.clipboard_clear()
-    root.clipboard_append(texto)
+
+    if texto is None:
+        texto = resultado_label.cget("text")
+        texto = texto.replace("Código: ", "").replace("\n", "")
+        print(f"Texto: ({texto})")
+        root.clipboard_append(texto)
+    else:
+        root.clipboard_append(texto)
+
     root.update()  # Importante para que se actualice el portapapeles
-    print("Código copiado al portapapeles")
+    print("Código copiado al portapapeles:", texto)
 
 # configureuración de la ventana principal
 root = tk.CTk()
@@ -127,11 +135,11 @@ text_entry = tk.CTkEntry(enviar_frame)
 text_entry.pack(pady=10)
 enviar_btn = tk.CTkButton(enviar_frame, text="Enviar", command=lambda: ejecutar_comando_enviar(text_entry.get()))
 enviar_btn.pack(pady=10)
-copiar_codigo_btn = tk.CTkButton(enviar_frame, text="Copiar código al portapapeles", command=lambda: copy_to_clipboard(resultado_label.cget('text')))
+copiar_codigo_btn = tk.CTkButton(enviar_frame, text="Copiar código al portapapeles", command=copy_to_clipboard)
 copiar_codigo_btn.pack(pady=10)
 estado_envio_label = tk.CTkLabel(enviar_frame, text="no enviado")
 # Label para mostrar el resultado del comando croc
-resultado_label = tk.CTkLabel(root, text="codig:", wraplength=400, justify="left")
+resultado_label = tk.CTkLabel(root, text="Config:", wraplength=400, justify="left")
 resultado_label.pack(pady=10)
 
 # Iniciar la aplicación con la ventana principal visible
